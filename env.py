@@ -48,12 +48,17 @@ def make_env(cfg):
     domain, _ = cfg.task.split("-", 1)
     if domain == "mw":  # Meta-World
         from tasks.metaworld import make_metaworld_env
+        # combine cfg with the domain specific cfg
 
         env = make_metaworld_env(cfg)
     elif domain == "adroit":  # Adroit
         from tasks.adroit import make_adroit_env
 
         env = make_adroit_env(cfg)
+    elif domain == "mm":  # MemoryMaze
+        from tasks.memorymaze import make_memorymaze_env
+
+        env = make_memorymaze_env(cfg)
     else:  # DMControl
         from tasks.dmcontrol import make_dmcontrol_env
 
@@ -62,6 +67,12 @@ def make_env(cfg):
     env = DefaultDictWrapper(env)
     cfg.domain = domain
     cfg.obs_shape = tuple(int(x) for x in env.observation_space.shape)
-    cfg.action_shape = tuple(int(x) for x in env.action_space.shape)
-    cfg.action_dim = env.action_space.shape[0]
+    print("Observation shape:", cfg.obs_shape)
+
+    if hasattr(env.action_space, 'discrete'):
+        cfg.action_shape = (env.action_space.n,)
+        cfg.action_dim = env.action_space.n
+    else:
+        cfg.action_shape = tuple(int(x) for x in env.action_space.shape)
+        cfg.action_dim = env.action_space.shape[0]
     return env

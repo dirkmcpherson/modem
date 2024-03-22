@@ -124,19 +124,19 @@ class Logger(object):
         project, entity = cfg.get("wandb_project", "none"), cfg.get(
             "wandb_entity", "none"
         )
-        import wandb
-
-        wandb.init(
-            project=project,
-            entity=entity,
-            name=str(cfg.seed),
-            group=self._group,
-            tags=cfg_to_group(cfg, return_list=True) + [f"seed:{cfg.seed}"],
-            dir=self._log_dir,
-            config=OmegaConf.to_container(cfg, resolve=True),
-        )
-        print(colored("Logs will be synced with wandb.", "blue", attrs=["bold"]))
-        self._wandb = wandb
+        # import wandb
+        # wandb.init(
+        #     project=project,
+        #     entity=entity,
+        #     name=str(cfg.seed),
+        #     group=self._group,
+        #     tags=cfg_to_group(cfg, return_list=True) + [f"seed:{cfg.seed}"],
+        #     dir=self._log_dir,
+        #     config=OmegaConf.to_container(cfg, resolve=True),
+        # )
+        # print(colored("Logs will be synced with wandb.", "blue", attrs=["bold"]))
+        # self._wandb = wandb
+        self._wandb = None
         self._video = (
             VideoRecorder(log_dir, self._wandb)
             if self._wandb and cfg.save_video

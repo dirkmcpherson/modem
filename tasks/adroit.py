@@ -93,6 +93,7 @@ class AdroitWrapper(gym.Wrapper):
         self._frames.append(obs)
         info["success"] = info["goal_achieved"]
         reward = float(info["success"]) - 1.0
+        
         return self._stacked_obs(), reward, False, info
 
     def render(self, mode="rgb_array", width=None, height=None, camera_id=None):
@@ -123,4 +124,7 @@ def make_adroit_env(cfg):
     env = TimeLimit(env, max_episode_steps=cfg.episode_length)
     env.reset()
     cfg.state_dim = env.state.shape[0]
+
+    for _ in range(100):
+        env.step(env.action_space.sample())
     return env

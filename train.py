@@ -70,6 +70,10 @@ def train(cfg: dict):
             demo_buffer += episode
         print(colored(f"Loaded {cfg.demos} demonstrations", "yellow", attrs=["bold"]))
         print(colored("Phase 1: policy pretraining", "red", attrs=["bold"]))
+
+        # from IPython import embed as ipshell
+        # ipshell()
+
         agent.init_bc(demo_buffer if cfg.get("demo_schedule", 0) != 0 else buffer)
         print(colored("\nPhase 2: seeding", "green", attrs=["bold"]))
 

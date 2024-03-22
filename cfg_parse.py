@@ -37,6 +37,9 @@ def parse_cfg(cfg: OmegaConf) -> OmegaConf:
     # Convenience
     cfg.task_title = cfg.task.replace("-", " ").title()
 
+    cfg['discrete'] = False
+    cfg['stateless'] = False
+
     # Overwrite task-specific episode lengths (after action repeat)
     if cfg.task.startswith("adroit-"):
         if cfg.task == "adroit-hammer":
@@ -47,5 +50,12 @@ def parse_cfg(cfg: OmegaConf) -> OmegaConf:
             cfg.episode_length = 100
         else:
             raise ValueError(f'Invalid Adroit task "{cfg.task}"')
+    elif cfg.task.startswith("mw"):
+        cfg.episode_length = 100
+    elif cfg.task.startswith("mm"):
+        cfg.discrete = True
+        cfg.stateless = True
+        cfg.episode_length = 1000
+
 
     return cfg

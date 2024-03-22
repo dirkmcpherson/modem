@@ -14,6 +14,7 @@ from pathlib import Path
 from torch import distributions as pyd
 from torch.distributions.utils import _standard_normal
 
+import cv2
 
 __REDUCE__ = lambda b: "mean" if b else "none"
 
@@ -283,17 +284,28 @@ class Episode(object):
 
 
 def get_demos(cfg):
-    fps = glob.glob(str(Path(cfg.demo_dir) / "demonstrations" / f"{cfg.task}/*.pt"))
+    demopath = Path(cfg.demo_dir) / "demonstrations" / f"{cfg.task}/*.pt"
+    print(f"Demopath: {demopath}")
+    fps = glob.glob(str(demopath))
     episodes = []
     for fp in fps:
         data = torch.load(fp)
         frames_dir = Path(os.path.dirname(fp)) / "frames"
         assert frames_dir.exists(), "No frames directory found for {}".format(fp)
         frame_fps = [frames_dir / fn for fn in data["frames"]]
-        obs = np.stack([np.array(Image.open(fp)) for fp in frame_fps]).transpose(
-            0, 3, 1, 2
-        )
-        state = torch.tensor(data["states"], dtype=torch.float32)
+
+        if cfg.task.startswith("mm"):
+            obs = np.stack([cv2.resize(np.array(Image.open(fp)), (224, 224)) for fp in frame_fps])
+            state = torch.zeros((len(data["states"]), 1), dtype=torch.float32) # replace the None state with a zero state
+            # from IPython import embed as ipshell; ipshell(); exit()
+        else:
+            obs = np.stack([np.array(Image.open(fp)) for fp in frame_fps])
+            state = torch.tensor(data["states"], dtype=torch.float32)
+
+        obs = obs.transpose(0, 3, 1, 2)
+
+        # from IPython import embed as ipshell; ipshell(); exit()
+
         if cfg.task.startswith("mw-"):
             state = torch.cat((state[:, :4], state[:, 18 : 18 + 4]), dim=-1)
         elif cfg.task.startswith("adroit-"):
@@ -305,6 +317,7 @@ def get_demos(cfg):
                 state = np.concatenate([state[:, :24], state[:, -9:-6]], axis=1)
             else:
                 raise NotImplementedError()
+
         actions = np.array(data["actions"], dtype=np.float32).clip(-1, 1)
         if cfg.task.startswith("mw-") or cfg.task.startswith("adroit-"):
             rewards = (
@@ -323,6 +336,7 @@ def get_demos(cfg):
             rewards = np.array(data["rewards"])
         episode = Episode.from_trajectory(cfg, obs, state, actions, rewards)
         episodes.append(episode)
+    print(f"\t found {len(episodes)} demonstrations")
     return episodes
 
 
@@ -346,6 +360,7 @@ class ReplayBuffer(object):
             dtype=torch.uint8,
             device=self.device,
         )
+        print(f"Obs shape {self._obs.shape} LastObs shape: {self._last_obs.shape}")
         self._action = torch.empty(
             (self.capacity, cfg.action_dim), dtype=torch.float32, device=self.device
         )
@@ -371,16 +386,21 @@ class ReplayBuffer(object):
 
     def __add__(self, episode: Episode):
         self.add(episode)
+        print(f"\tAdding episode to buffer. New buffer size: {len(self)}")
         return self
 
     def add(self, episode: Episode):
         obs = episode.obs[:-1, -3:]
         if episode.obs.shape[1] == 3:
-            last_obs = episode.obs[-self.cfg.frame_stack :].view(
-                self.cfg.frame_stack * 3, *self.cfg.obs_shape[-2:]
-            )
+            last_obs = episode.obs[-self.cfg.frame_stack :].view(self.cfg.frame_stack * 3, 224, 224)
+            # last_obs = episode.obs[-self.cfg.frame_stack :].view(
+            #     self.cfg.frame_stack * 3, *self.cfg.obs_shape[-2:]
+            # )
         else:
             last_obs = episode.obs[-1]
+        
+        
+        # from IPython import embed as ipshell; ipshell(); exit()
         self._obs[self.idx : self.idx + self.cfg.episode_length] = obs
         self._last_obs[self.idx // self.cfg.episode_length] = last_obs
         self._action[self.idx : self.idx + self.cfg.episode_length] = episode.action

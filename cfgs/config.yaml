@@ -9,6 +9,8 @@ img_size: 224
 frame_stack: 2
 action_repeat: 2
 train_steps: 100000
+discrete: false
+stateless: false
 
 # demonstrations
 demos: 5
@@ -52,8 +54,8 @@ wandb_project: ???
 wandb_entity: ???
 
 # dirs (required: fill in your details)
-logging_dir: .
-demo_dir: ???
+logging_dir: /home/james/workspace/modem/logs
+demo_dir: /home/james/workspace/modem
 
 # misc
 seed: 1

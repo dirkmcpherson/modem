@@ -84,5 +84,6 @@ def make_metaworld_env(cfg):
     env._freeze_rand_vec = False
     env = MetaWorldWrapper(env, cfg)
     env = TimeLimit(env, max_episode_steps=cfg.episode_length)
+    env.reset()
     cfg.state_dim = 8
     return env
