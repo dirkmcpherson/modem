@@ -50,7 +50,7 @@ mlp_dim: 512
 latent_dim: 50
 
 # wandb (required: fill in your details)
-wandb_project: ???
+wandb_project: "modem"
 wandb_entity: ???
 
 # dirs (required: fill in your details)
@@ -61,7 +61,7 @@ demo_dir: /home/james/workspace/modem
 seed: 1
 exp_name: default
 eval_freq: 2000
-eval_episodes: 30
+eval_episodes: 3
 save_freq: 20000
 save_video: true
 save_model: true

@@ -38,7 +38,7 @@ def evaluate(env, agent, cfg, step, env_step, video):
             video.init(env, enabled=(i == 0))
         while not done:
             action = agent.plan(obs, env.state, eval_mode=True, step=step, t0=t == 0)
-            obs, reward, done, info = env.step(action.cpu().numpy())
+            obs, reward, done, info = env.step(action.cpu().numpy().argmax() if cfg.discrete else action.cpu().numpy())
             ep_reward += reward
             if video:
                 video.record(env)
@@ -80,13 +80,13 @@ def train(cfg: dict):
     # Run training
     episode_idx, start_time = 0, time.time()
     for step in range(0, cfg.train_steps + cfg.episode_length, cfg.episode_length):
-
+    # for step in range(10):
         # Collect trajectory
         obs = env.reset()
         episode = Episode(cfg, obs, env.state)
         while not episode.done:
             action = agent.plan(obs, env.state, step=step, t0=episode.first)
-            obs, reward, done, info = env.step(action.cpu().numpy())
+            obs, reward, done, info = env.step(action.cpu().numpy().argmax() if cfg.discrete else action.cpu().numpy())
             episode += (obs, env.state, action, reward, done)
         assert (
             len(episode) == cfg.episode_length

@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from termcolor import colored
 from omegaconf import OmegaConf
+from torch.utils.tensorboard import SummaryWriter
 
 
 CONSOLE_FORMAT = [
@@ -143,6 +144,8 @@ class Logger(object):
             else None
         )
 
+        self.summary_writer = SummaryWriter(log_dir, max_queue=1000)
+
     @property
     def video(self):
         return self._video
@@ -192,6 +195,11 @@ class Logger(object):
                 xkey = "env_step"
             for k, v in d.items():
                 self._wandb.log({category + "/" + k: v}, step=d[xkey])
+        if self.summary_writer is not None:
+            if category in {"train", "eval"}:
+                xkey = "env_step"
+            for k, v in d.items():
+                self.summary_writer.add_scalar(category + "/" + k, v, d[xkey])
         if category == "eval":
             keys = ["env_step", "episode_reward"]
             self._eval.append(np.array([d[keys[0]], d[keys[1]]]))

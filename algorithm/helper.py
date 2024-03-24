@@ -148,10 +148,23 @@ def state_enc(cfg):
     )
 
 
-def mlp(in_dim, mlp_dim, out_dim, act_fn=nn.ELU()):
+def mlp(in_dim, mlp_dim, out_dim, act_fn=nn.ELU(), discrete_actions=False):
     """Returns an MLP."""
     if isinstance(mlp_dim, int):
         mlp_dim = [mlp_dim, mlp_dim]
+
+    # layers = [
+    #     nn.Linear(in_dim, mlp_dim[0]),
+    #     act_fn,
+    #     nn.Linear(mlp_dim[0], mlp_dim[1]),
+    #     act_fn,
+    # ]
+
+    # if discrete_actions:
+    #     return nn.Sequential(*layers, nn.Linear(mlp_dim[1], out_dim))
+    # else:
+
+
     return nn.Sequential(
         nn.Linear(in_dim, mlp_dim[0]),
         act_fn,

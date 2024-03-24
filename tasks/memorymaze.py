@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+import cv2
 
 ###from tf dreamerv2 code
 from gym.wrappers import TimeLimit
@@ -9,7 +10,7 @@ from collections import deque
 
 # class MemoryMaze(gym.Wrapper):
 class MemoryMaze:
-    def __init__(self, task, obs_key="image", act_key="action", size=(64, 64), seed=0, action_repeat=2):
+    def __init__(self, task, obs_key="image", act_key="action", size=(64, 64), seed=0, action_repeat=1):
         # 9x9, 11x11, 13x13 and 15x15 are available
         self._env = gym.make(f"MemoryMaze-{task}-v0", seed=seed)
         self._obs_is_dict = hasattr(self._env.observation_space, "spaces")
@@ -22,7 +23,6 @@ class MemoryMaze:
         # support frame stacking
         self._num_frames = 2
         self._frames = deque([], maxlen=self._num_frames)
-        self._frames = []
 
         # self._observation_space = gym.spaces.Box(0, 255, (6, 224, 224), dtype=np.uint8)
         self._observation_space = gym.spaces.Box(0, 255, (self._num_frames * 3, 64, 64), dtype=np.uint8)
@@ -45,6 +45,12 @@ class MemoryMaze:
         space = self._env.action_space
         space.discrete = True
         return space
+    
+    @property
+    def state(self):
+        state = np.zeros(1)
+        return state
+
 
     def step(self, action):
         for _ in range(self._action_repeat):
@@ -62,7 +68,7 @@ class MemoryMaze:
 
     def _stacked_obs(self):
         assert len(self._frames) == self._num_frames
-        return np.concatenate(list(self._frames), axis=0)
+        return np.concatenate(list(self._frames), axis=2)
 
     def reset(self):
         obs = self._env.reset()
@@ -73,7 +79,8 @@ class MemoryMaze:
         obs["is_terminal"] = False
 
         for _ in range(self._num_frames):
-            self._frames.append(obs)
+            self._frames.append(obs['image'])
+
         return self._stacked_obs()
     
 def ImageScaleWrapper(env, size):
@@ -84,9 +91,11 @@ def ImageScaleWrapper(env, size):
             obs_shape = env.observation_space.shape
             self.observation_space = gym.spaces.Box(0, 255, (obs_shape[0], size, size), dtype=np.uint8)
 
-        def observation(self, obs):
-            obs["image"] = cv2.resize(obs["image"], (self.size, self.size), interpolation=cv2.INTER_NEAREST)
-            return obs
+        def observation(self, obs_img):
+            # obs["image"] = cv2.resize(obs["image"], (self.size, self.size), interpolation=cv2.INTER_NEAREST)
+            # from IPython import embed as ipshell; ipshell()
+            obs_img = cv2.resize(obs_img, (self.size, self.size), interpolation=cv2.INTER_NEAREST)
+            return obs_img.transpose(2, 0, 1)
 
     return ImageScaleWrapper(env, size)
 

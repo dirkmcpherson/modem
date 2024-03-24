@@ -47,12 +47,22 @@ class TOLD(nn.Module):
         return self._dynamics(x), self._reward(x)
 
     def pi(self, z, std=0):
-        """Samples an action from the learned policy (pi)."""
-        mu = torch.tanh(self._pi(z))
-        if std > 0:
-            std = torch.ones_like(mu) * std
-            return h.TruncatedNormal(mu, std).sample(clip=0.3)
-        return mu
+        if self.cfg.discrete:
+            # TODO: sample vs mode
+            """Samples an action from the learned policy (pi)."""
+            logits = self._pi(z); probs = torch.softmax(logits, dim=-1)
+            sample = torch.distributions.one_hot_categorical.OneHotCategorical(
+                logits=logits
+            ).sample()
+            # force the sample to require gradients
+            sample += (probs - probs.detach())
+            return sample
+        else:
+            mu = torch.tanh(self._pi(z))
+            if std > 0:
+                std = torch.ones_like(mu) * std
+                return h.TruncatedNormal(mu, std).sample(clip=0.3)
+            return mu
 
     def Q(self, z, a):
         """Predict state-action value (Q)."""
@@ -218,8 +228,8 @@ class TDMPC:
         pretrain_len = 2 * self.cfg.demos * self.cfg.episode_length
         print(f"Pretraining policy for {pretrain_len} batches...")
         for _ in tqdm(range(pretrain_len), "Pretraining policy"):
-        # print(f"DEBUG: truncated range to 10")
-        # for _ in tqdm([i for i in range(10)]):
+        # print(f"DEBUG: truncated range to 2")
+        # for _ in tqdm([i for i in range(2)]):
             obs, _, action, _, state, _, _, _ = buffer.sample()
             self.bc_optim.zero_grad(set_to_none=True)
             a = self.model.pi(self.model.h(self.aug(obs), state))
